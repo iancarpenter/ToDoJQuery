@@ -1,146 +1,158 @@
-// Immeditately Invoked Function Expression (IIFE)
-(function() {
-    loadItem();    
-}());
-
-
-// If local storage is available, load previously 
-// saved tasks
-function loadItem() {
+// Ensure the DOM is ready
+$(function() {
     
-    if (window.localStorage) {
-      
-       // First clear everything out
-       var ul = document.querySelector('ul');
-       var li = document.getElementsByTagName('li');       
-       var remainingLi;
+    loadItem();    
 
-       while(remainingLi = li.length > 0) {
-           ul.removeChild(li[0]);           
-       }
-       
-       // For each record returned from local storage retrieve the data
-       // and create the elements to store the data returned in
-       for(var i = 0; i < localStorage.length; i++) {
-           
-          var newElement = document.createElement('li');
+    // If local storage is available, load previously 
+    // saved tasks
+    function loadItem() {
+        if (window.localStorage) {
             
-           var savedTask = localStorage.getItem(i);                                                
-           
-           var newInput = createInputElement();
-           newInput.value = savedTask;
-             
-           var newRadio = createRadioElement();
+            var $ul = removeUnsavedChanges();
+            
+            var savedRecordsArray = getLocalStorageAsArray();
+            
+            if(savedRecordsArray.length > 0 ) {
+                loadLocalStorage($ul, savedRecordsArray);
+            }
+                
+            setCountOfItems();
+        }    
+    } 
 
-           // Add the input and radio to the li element
-           newElement.appendChild(newInput);
-           newElement.appendChild(newRadio);
-                        
-           // get the place where the new element is going to be added
-           var position = document.getElementsByTagName('ul')[0];
+    // Remove any unsaved tasks
+    function removeUnsavedChanges() {        
+        var $ul = $('ul');                        
+        $ul.empty();
+        return $ul;   
+    }
 
-           // Add the li entry including the input field to the ul elemet
-           position.appendChild(newElement);
-           
+
+    // Return the contents of local storage as an array
+    function getLocalStorageAsArray() {
+        // get what has been previously saved. 
+        var savedRecordsString;  
+        savedRecordsString = localStorage.getItem('iancJQueryToDoList');
+
+        var savedRecordsArray = [];
+
+        // convert the string back to an array    
+        try {
+            savedRecordsArray = savedRecordsString.split(',');
+        } catch(e) {        
+            if (savedRecordsString === null) {            
+            // Fine, no entries found in localStorage
+            } else {
+                throw(e);
+            }
+        } finally {
+            return savedRecordsArray;
+        }                    
+    } 
+
+    function loadLocalStorage($ul, savedRecordsArray ) {
+        // For each record returned from local storage retrieve the data
+        // and create the elements to store the data returned in
+        for(var i = 0; i < savedRecordsArray.length; i++) {    
+            var $newLi = $('<li>');                            
+            
+            var $newTextInput = createInputElement();            
+            $newTextInput.val(savedRecordsArray[i]);            
+            
+            var $newRadio = createRadioElement();            
+                    
+            $newTextInput.appendTo($newLi);
+            $newRadio.appendTo($newLi);
+            $newLi.appendTo($ul);                                                                                           
         }
+    }
+    
+    function createInputElement() {
+        
+        var $newInput = $('<input/>')
+                        .attr('type', 'text') 
+                        .attr('name', 'task');
+
+        return $newInput;
+    }
+
+    function createRadioElement() {
+        
+        var $newRadio = $('<input>')
+                        .attr('type', 'radio')
+                        .attr('name', 'selected')
+                        .attr('checked', 'checked');
+
+        return $newRadio;
+        
+    }
+
+    // Add a new task
+    function addItem() {    
+        
+        var $ul = $('ul');  
+        var $newLi = $('<li>');                            
+        var $newTextInput = createInputElement();        
+        var $newRadio = createRadioElement();            
+            
+        $newTextInput.appendTo($newLi);
+        $newRadio.appendTo($newLi);
+        $newLi.appendTo($ul);    
         
         setCountOfItems();
-        
-    }       
-}
-
-function createInputElement() {
-    var newInput = document.createElement('input');
-    newInput.setAttribute('type', 'text');
-    newInput.setAttribute('name', 'task');
-
-    return newInput;
-}
-
-function createRadioElement() {
-    var newRadio = document.createElement('input');
-    newRadio.setAttribute('type', 'radio');
-    newRadio.setAttribute('name', 'selected');
-    newRadio.setAttribute('checked', 'checked');
-
-    return newRadio;
-}
-
-
-// Add a new task
-function addItem() {    
-
-    // Create the elements required, li, text input field and radio button
-    var newElement = document.createElement('li');            
-    var newInput = createInputElement();
-    var newRadio = createRadioElement();
-
-    // Add the input and radio to the li element
-    newElement.appendChild(newInput);
-    newElement.appendChild(newRadio);
-    
-    // get the place where the new element is going to be added
-    var position = document.getElementsByTagName('ul')[0];
-
-    // Add the li entry including the input field to the ul elemet
-    position.appendChild(newElement);
-
-    // Update the count
-    setCountOfItems();
-
-}
-
-// Removes an item from the to do list and local storage
-function removeItem() {
-    
-    // Get all the radio buttons
-    var selectedRadio = document.getElementsByName('selected');
-
-    // Go through them looking for the one that is selected (checked)
-    for (var i = 0; i < selectedRadio.length; i++) {        
-        
-        // Remove the selected 
-        if (selectedRadio[i].checked) {
-            
-            var removeEl = document.getElementsByTagName('li')[i];            
-            var containerEl = removeEl.parentNode;
-            containerEl.removeChild(removeEl);
-            
-            // Remove the item from local storage
-            if (window.localStorage) {
-                localStorage.removeItem(i);
-            }
-        }    
     }
 
-    setCountOfItems();
-            
-}
+    // Removes an item from the to do list and local storage
+    function removeItem() {
+        
+        // Get all the radio buttons
+        var $selectedRadio = $('input[name="selected"]');
+               
+        $selectedRadio.each(function(index) {
+            if( $(this).is(':checked')) { 
+                $(this).parent().remove();                
+            }            
+        });      
 
-// Save the tasks to local storage
-function saveItem() {
-
-    if (window.localStorage) {       
-        var tasks = document.getElementsByName('task');        
-
-        for(var i = 0; i < tasks.length; i++) {            
-            localStorage.setItem(i, tasks[i].value);
-        }                
+       setCountOfItems();            
     }
-}
 
-function setCountOfItems() {
-    var ul = document.querySelector('ul');
-    var count = document.getElementById('Count');           
-    count.textContent = ul.childElementCount;
-}
+    // Save the tasks to local storage
+    function saveItem() {
+     
+       if (window.localStorage) {
+                      
+           var $tasks = $('input[name="task"]');                   
+           
+           var tasksToBeSaved = [];
+                      
+           $tasks.each(function() {
+               tasksToBeSaved.push($(this).val());
+           });
+           
+           const localStorageKey = 'iancJQueryToDoList';
+           
+           // if there are tasks to be saved - save them
+           if (tasksToBeSaved.length > 0) {
+               localStorage.setItem(localStorageKey, tasksToBeSaved.toString());
+           } else {
+               // otherwise remove the key from local storage
+               localStorage.removeItem(localStorageKey);
+           }                       
+       }
 
-var addButton = document.getElementById('add');
-var removeButton = document.getElementById('remove');
-var saveButton = document.getElementById('save');
-var loadButton = document.getElementById('load');
+    }
 
-addButton.addEventListener('click', function() { addItem() }, false);
-removeButton.addEventListener('click', function() { removeItem() }, false);
-saveButton.addEventListener('click', function() { saveItem() }, false);
-loadButton.addEventListener('click', function() { loadItem() }, false);
+    function setCountOfItems() {
+      
+        var $countOfItems = $('li').length;
+        
+        $('#Count').text($countOfItems);
+    }
+
+    $('#add').click(function() { addItem() }) ;
+    $('#remove').click(function() { removeItem() });
+    $('#save').click(function() { saveItem() });
+    $('#load').click(function() { loadItem() });
+
+});   
